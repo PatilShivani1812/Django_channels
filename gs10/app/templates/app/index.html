@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+</head>
+<body>
+    <h1>Group Name: {{groupname}}</h1>
+    <textarea name="" id="chat-log" cols="100" rows="20"></textarea><br>
+    <input type="text" id="chat-message-input" size="100">
+    <input type="button" value="Send" id="chat-message-submit">
+    {{groupname|json_script:"group-name"}}
+    
+    <!-- WebSocket connection script -->
+    <script>
+        const groupName = JSON.parse(document.getElementById('group-name').textContent)
+        console.log(groupName)
+        // var ws = new WebSocket('ws://127.0.0.1:8000/ws/ac/');
+        var ws = new WebSocket(
+            'ws://' + window.location.host + '/ws/ac/' +groupName + '/'
+        )
+
+        ws.onopen = function(){
+            console.log('WebSocket connection opened...');
+            ws.send(JSON.stringify({  // Sending JSON formatted message
+                'type': 'chat.message',  // Message type to match the server-side handler
+                'message': 'Hi from Client'
+            }));
+        };
+
+        ws.onmessage = function(event){
+            console.log('Message received from server:', event.data);
+            console.log('Type of message Received from Server...', typeof(event.data));
+            const data = JSON.parse(event.data);
+            console.log('Parsed Data...', data);
+            console.log('Type of Parsed Data...', typeof(data));
+            console.log('Actual Message...', data.message);
+            document.querySelector('#chat-log').value += (data.message + '\n');
+        };
+
+        ws.onclose = function(event){
+            console.error('WebSocket connection closed unexpectedly');
+        };
+
+        document.getElementById('chat-message-submit').onclick = function(event){
+            const messageInputDom = document.getElementById('chat-message-input');
+            const message = messageInputDom.value;
+            ws.send(JSON.stringify({
+                'type': 'chat.message',  // Message type to match the server-side handler
+                'message': message
+            }));
+            messageInputDom.value = '';
+        };
+    </script>
+</body>
+</html>
